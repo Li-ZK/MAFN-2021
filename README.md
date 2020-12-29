@@ -36,6 +36,6 @@ Paper:
 * [SSRN](https://ieeexplore.ieee.org/document/8061020)
 * [DFFN](https://ieeexplore.ieee.org/document/8283837)
 * [DBDA](https://www.researchgate.net/publication/339192574_Classification_of_Hyperspectral_Image_Based_on_Double-Branch_Dual-Attention_Mechanism_Network)
-* [MAFN](Fig1.png)
+* [MAFN]![image](fig1.jpg)
 Fig1. The structure of the MAFN network. MAFN consists of three main components: spectral feature extraction, spatial feature extraction and joint spectral-spatial feature extraction. MAFN employs Band Attention Module (BAM) and Spatial Attention Module (SAM) respectively to alleviate the influence of redundant bands and interfering pixels. MAFN realizes feature reuse and obtains complementary information from different levels by combining multi-attention and multi-level fusion mechanisms, which can extract more representative features.
 

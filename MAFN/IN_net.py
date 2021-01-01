@@ -1,3 +1,7 @@
+'''
+把中间的卷积层都去掉了，使用了三个残差块
+'''
+
 import keras
 from keras.models import Model
 from keras.layers.advanced_activations import PReLU, LeakyReLU
@@ -66,10 +70,9 @@ def model():
         CAB_relu6)
     CAB_bn7 = BatchNormalization()(CAB_conv7)
     CAB_sigmoid = Activation('sigmoid')(CAB_bn7)
-    # =================================================================================================================
+    # ==================================================================================================================
     CAB_mul = multiply([input_1, CAB_sigmoid])
 
-    # Spectral feature extraction
     input_spe = Reshape((CAB_mul._keras_shape[1], CAB_mul._keras_shape[2], CAB_mul._keras_shape[3], 1))(CAB_mul)
 
     # input_spe = Reshape((input_1._keras_shape[1], input_1._keras_shape[2], input_1._keras_shape[3], 1))(input_1)
@@ -82,7 +85,7 @@ def model():
     bn_spe11 = BatchNormalization()(conv_spe11)
     relu_spe11 = PReLU()(bn_spe11)
 
-    # ==============================resnet block===========================================
+
     blockconv_spe1 = Conv3D(num_filters_spe, (1, 1, 7), padding='same', strides=(1, 1, 1))(relu_spe11)
     blockbn_spe1 = BatchNormalization()(blockconv_spe1)
     blockrelu_spe1 = PReLU()(blockbn_spe1)
@@ -99,24 +102,21 @@ def model():
     bn_spe4 = BatchNormalization()(add_spe2)
     relu_spe4 = PReLU()(bn_spe4)
 
-
     blockconv_spe3 = Conv3D(num_filters_spe, (1, 1, 7), padding='same', strides=(1, 1, 1))(relu_spe4)
     blockbn_spe3 = BatchNormalization()(blockconv_spe3)
     blockrelu_spe3 = PReLU()(blockbn_spe3)
     conv_spe41 = Conv3D(num_filters_spe, (1, 1, 7), padding='same', strides=(1, 1, 1))(blockrelu_spe3)
     add_spe3 = add([relu_spe4, conv_spe41])
-    # ===================================================================================================
     bn_spe41 = BatchNormalization()(add_spe3)
     relu_spe41 = PReLU()(bn_spe41)
 
     add_all_spe = add([relu_spe2, relu_spe4, relu_spe41])
 
-
     conv_spe6 = Conv3D(8, (1, 1, 97), padding='valid', strides=(1, 1, 1))(add_all_spe)
     bn_spe6 = BatchNormalization()(conv_spe6)
     relu_spe6 = PReLU()(bn_spe6)
 
-    # =========================== Spatial feature extraction=====================================================
+
 
     input_spa = Reshape((input_2._keras_shape[1], input_2._keras_shape[2], input_2._keras_shape[3], 1))(input_2)
     conv_spa1 = Conv3D(16, (5, 5, 30), padding='valid', strides=(1, 1, 1))(input_spa)
@@ -130,7 +130,6 @@ def model():
     bn_spa11 = BatchNormalization()(conv_spa11)
     relu_spa11 = PReLU()(bn_spa11)
 
-    # SAM
     VIS_conv1 = Conv3D(16, (1, 1, 16), padding='valid', strides=(1, 1, 1),kernel_initializer='glorot_uniform',
                        kernel_regularizer=l2(1e-4))(relu_spa11)
     VIS_BN1 = BatchNormalization()(VIS_conv1)
@@ -145,7 +144,6 @@ def model():
     VIS_SHAPE2 = Reshape((VIS_relu2._keras_shape[1] * VIS_relu2._keras_shape[2], VIS_relu2._keras_shape[4]))(
         VIS_relu2)
     trans_VIS_SHAPE2 = Permute((2, 1))(VIS_SHAPE2)
-
     VIS_conv3 = Conv3D(16, (1, 1, 16), padding='valid', strides=(1, 1, 1),kernel_initializer='glorot_uniform',
                        kernel_regularizer=l2(1e-4))(relu_spa11)
     VIS_BN3 = BatchNormalization()(VIS_conv3)
@@ -166,7 +164,6 @@ def model():
     VIS_BN4 = BatchNormalization()(VIS_conv4)
     VIS_ADD = add([relu_spa11, VIS_BN4])
 
-    # ===================================resnet  block================================================
     blockconv_spa1 = Conv3D(num_filters_spa, (3, 3, 1), padding='same', strides=(1, 1, 1))(VIS_ADD)
     blockbn_spa1 = BatchNormalization()(blockconv_spa1)
     blockrelu_spa1 = PReLU()(blockbn_spa1)
@@ -180,7 +177,6 @@ def model():
     blockbn_spa2 = BatchNormalization()(blockconv_spa2)
     blockrelu_spa2 = PReLU()(blockbn_spa2)
     conv_spa4 = Conv3D(num_filters_spa, (3, 3, 1), padding='same', strides=(1))(blockrelu_spa2)
-
     add_spa2 = add([relu_spa2, conv_spa4])
     bn_spa4 = BatchNormalization()(add_spa2)
     relu_spa4 = PReLU()(bn_spa4)
@@ -193,9 +189,9 @@ def model():
     add_spa3 = add([relu_spa4, conv_spa41])
     bn_spa41 = BatchNormalization()(add_spa3)
     relu_spa41 = PReLU()(bn_spa41)
-    # spa-multi-feature-fusion
+
     add_all_spa = add([relu_spa2, relu_spa4, relu_spa41])
-    # feature alignment
+
     conv_spa6 = Conv3D(num_filters_spa, (5, 5, 1), padding='valid', strides=(1, 1, 1))(add_all_spa)
     bn_spa6 = BatchNormalization()(conv_spa6)
     relu_spa6 = PReLU()(bn_spa6)
@@ -216,19 +212,17 @@ def model():
     bn_spa9 = BatchNormalization()(conv_spa9)
     relu_spa9 = PReLU()(bn_spa9)
 
-    #  Spectral features and spatial features are connected
+
     feature_fusion = concatenate([relu_spe6, relu_spa9])
     reshape_all = Reshape((feature_fusion._keras_shape[1], feature_fusion._keras_shape[2],
                            feature_fusion._keras_shape[4], feature_fusion._keras_shape[3]))(
         feature_fusion)
 
-    # joint spectral-spatial feature extraction
     conv_all1 = Conv3D(16, (3,3,3), padding='same', strides=(1, 1, 1))(reshape_all)
     print('convall1 shape:', conv_all1.shape)
     bn_all1 = BatchNormalization()(conv_all1)
     relu_all1 = PReLU()(bn_all1)
 
-    # SAM2
     VIS_conv11 = Conv3D(16, (1, 1, 16), padding='valid', strides=(1, 1, 1), kernel_initializer='glorot_uniform',
                         kernel_regularizer=l2(1e-4))(relu_all1)
     VIS_BN11 = BatchNormalization()(VIS_conv11)
@@ -269,7 +263,9 @@ def model():
     relu_all2 = PReLU()(bn_all2)
 
     flatten = Flatten()(relu_all2)
+    # drop0 = Dropout(0.5)(flatten)
     dense = Dense(units=512, activation="relu", kernel_initializer="he_normal")(flatten)
+    # dense_1 = Dense(units=512, activation="relu", kernel_initializer="he_normal")(dense)
     drop = Dropout(0.5)(dense)
     dense_2 = Dense(units=256, activation="relu", kernel_initializer="he_normal")(drop)
     drop1 = Dropout(0.5)(dense_2)

@@ -1,5 +1,5 @@
 from pylab import *
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
 import scipy.io as sio
 import keras
@@ -16,6 +16,7 @@ from keras.optimizers import Adam, SGD, Adadelta, RMSprop, Nadam
 from keras.callbacks import ReduceLROnPlateau
 import time
 import IN_net
+from spectral import spy_colors, save_rgb
 # import spectral
 np.random.seed(1337)
 
@@ -79,7 +80,7 @@ def sampling(proptionVal, groundTruth):              #divide dataset into train 
     return train_indices, test_indices
     print(len(test_indices))
 
-# load data
+
 mat_data = sio.loadmat('dataset/IN/Indian_pines_corrected.mat')
 print(mat_data.keys())
 data_IN = mat_data['indian_pines_corrected']
@@ -90,6 +91,7 @@ print(mat_data.keys())
 data_IN1 = mat_data1['data']
 print(data_IN1.shape)
 
+
 mat_gt = sio.loadmat('dataset/IN/Indian_pines_gt.mat')
 print(mat_gt.keys())
 gt_IN = mat_gt['indian_pines_gt']
@@ -98,8 +100,6 @@ print(gt_IN.shape)
 
 new_gt_IN = gt_IN
 
-
-# Parameter Settings
 nb_classes = 16
 batch_size = 16
 nb_epoch = 200
@@ -107,6 +107,7 @@ patience = 200
 
 img_rows, img_cols = 7, 7
 img_rows1, img_cols1 = 27, 27
+
 
 INPUT_DIMENSION_CONV = 200
 INPUT_DIMENSION_CONV1 = 30
@@ -116,16 +117,15 @@ img_channels1 = 3
 PATCH_LENGTH = 3
 PATCH_LENGTH1 = 13
 
-# Dataset segmentation
 TOTAL_SIZE = 10249
 VAL_SIZE =1025  # 10%
-# TRAIN_SIZE = 520  # 5%
-TRAIN_SIZE = 419  # 4%
+TRAIN_SIZE = 520  # 5%
+# TRAIN_SIZE = 419  # 4%
 # TRAIN_SIZE = 314  # 3%
 # TRAIN_SIZE = 212  # 2%
 TEST_SIZE = TOTAL_SIZE - TRAIN_SIZE
 ALL_SIZE = data_IN.shape[0] * data_IN.shape[1]
-VALIDATION_SPLIT = 0.96
+VALIDATION_SPLIT = 0.95
 
 data = data_IN.reshape(np.prod(data_IN.shape[:2]), np.prod(data_IN.shape[2:]))
 print('data.shape：', data.shape)
@@ -225,16 +225,6 @@ for num in range(NUM):
         x_test1 = x_test_all1[:-VAL_SIZE]
         y_test = y_test[:-VAL_SIZE]
 
-        # x_test = x_test_all
-        # x_test1 = x_test_all1
-        # y_test = y_test
-        # print("x_train shape :", x_train.shape)
-        # print("y_train shape :", y_train.shape)
-        # print('x_val shape :', x_val.shape)
-        # print('y_val shape :', y_val.shape)
-        # print("x_test shape :", x_test.shape)
-        # print("y_test shape :", y_test.shape)
-
         print("x_train shape :", x_train.shape, x_train1.shape)
         print("y_train shape :", y_train.shape)
         print('x_val shape :', x_val.shape, x_val1.shape)
@@ -242,29 +232,28 @@ for num in range(NUM):
         print("x_test shape :", x_test.shape, x_test1.shape)
         print("y_test shape :", y_test.shape)
 
-model = IN_net.model()
-# kcallback
-earlyStopping6 = kcallbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='auto')
-saveBestModel6 = kcallbacks.ModelCheckpoint(filepath='ckpt/best.h5', monitor='val_loss', verbose=1,save_best_only=True, mode='auto')
-# reduce_lr = ReduceLROnPlateau(monitor='val_loss',factor=0.5, patience=20, mode='auto')
 
-print("----------------------------training-begin------------------------------")
+model = IN_net.model()
+
+earlyStopping6 = kcallbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='auto')
+saveBestModel6 = kcallbacks.ModelCheckpoint(filepath='ckpt/indian_pines.h5', monitor='val_loss', verbose=1,save_best_only=True, mode='auto')
+
+print("^-^-------------training-------------------^-^")
 
 tic6 = time.clock()
 History = model.fit([x_train, x_train1],  y_train, nb_epoch =nb_epoch, batch_size=16,
           callbacks=[earlyStopping6, saveBestModel6], validation_data=([x_val, x_val1],  y_val))
 toc6 = time.clock()
-# model.save("models/two_channel_IN.h5")
-# model.save("models/spa_network.h5")
-model.save("models/test3_best.h5")
+model.save("models/IN.h5")
 
 scores = model.evaluate([x_val, x_val1],  y_val, batch_size=25)
 print('Test score:', scores[0])
 print('Test accuracy:', scores[1])
-model.save_weights('model_weigh/test3_best.h5')
+model.save_weights('model_weigh/IN.h5')
+
 
 print("^-^-------------testing-------------------^-^")
-model.load_weights('ckpt/best.h5')
+model.load_weights('ckpt/indian_pines.h5')
 tic7 = time.clock()
 pred_test = model.predict([x_test, x_test1]).argmax(axis=1)
 toc7 = time.clock()
@@ -300,3 +289,19 @@ print('each_acc', each_acc_res4)
 print("aa", average_acc_res4)
 print("oa", overall_acc)
 print("kappa", kappa)
+
+gt[test_indices[:-VAL_SIZE]] = pred_test + 1
+gt = gt.reshape(145, 145)
+save_rgb('IN-DBDA.jpg', gt, colors=spy_colors)
+#
+color = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [0.5, 0.5, 1], [0.65, 0.35, 1],
+                  [0.75, 0.5, 0.75], [0.75, 1, 0.5], [0.5, 1, 0.65], [0.65, 0.65, 0], [0.75, 1, 0.65], [0, 0, 0.5], [0, 1, 0.75], [0.5, 0.75, 1]])
+# color = color*255
+newcmap = ListedColormap(color)
+
+view = pyplot.imshow(gt.astype(int), cmap=newcmap)
+bar = pyplot.colorbar()
+bar.set_ticks(np.linspace(0, 16, 17))
+bar.set_ticklabels(('', 'Alfalfa', 'Corn-notill', 'Corn-mintill', 'Corn', 'Grass-pasture', 'Grass-tree', 'Grass-pasture-mowed', 'Hay-windrowed',
+                    'Oats', 'Soybean-notill', 'Soybean-mintill', 'Soybean-clean', 'Wheat', 'Woods', 'Buildings-Grass-Trees-Drives', 'Stone-Steel-Towers'))
+pyplot.show()

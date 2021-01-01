@@ -9,7 +9,9 @@ from keras.optimizers import RMSprop
 from keras.utils.np_utils import to_categorical
 from sklearn import metrics, preprocessing
 from Utils import zeroPadding, averageAccuracy, Kappa
-
+from matplotlib.colors import ListedColormap
+from matplotlib import pyplot
+from spectral import spy_colors, save_rgb
 
 # sess=tf.Session()
 
@@ -33,12 +35,39 @@ def selectNeighboringPatch(matrix, pos_row, pos_col, ex_len):
 def sampling(proptionVal, groundTruth):              #divide dataset into train and test datasets
     labels_loc = {}
     train = {}
+    test = {}
+#     m = max(groundTruth)
+#     for i in range(m):
+#         indices = [j for j, x in enumerate(groundTruth.ravel().tolist()) if x == i + 1]
+#         np.random.shuffle(indices)
+#
+#         labels_loc[i] = indices
+#         nb_val = int(proptionVal * len(indices))
+#         #print(nb_val)
+#         train[i] = indices[:-nb_val]
+#         test[i] = indices[-nb_val:]
+# #    whole_indices = []
+#     train_indices = []
+#     test_indices = []
+#     for i in range(m):
+# #        whole_indices += labels_lmodel_feature2.preoc[i]
+#         train_indices += train[i]
+#         test_indices += test[i]
+#     np.random.shuffle(train_indices)
+#     np.random.shuffle(test_indices)
+#     return train_indices, test_indmodel_feature2.preices
+#     print(len(test_indices))
     m=max(groundTruth)
     for i in range(m):
         indices = [j for j, x in enumerate(groundTruth.ravel().tolist()) if x == i + 1]
         np.random.shuffle(indices)
 
         labels_loc[i] = indices
+        # nb_val = int(proptionVal * len(indices))
+        # nb_val = proptionVal
+
+        # train[i] = indices[:nb_val]
+        # test[i] = indices[nb_val:]
         train[i]=indices
     train_indices = []
     # test_indices = []
@@ -76,9 +105,10 @@ def sampling1(proptionVal, groundTruth):              #divide dataset into train
 
     return train_indices
 
-# read data
+
 mat_data = sio.loadmat('dataset/houston/houston.mat')
 data_IN = mat_data['data']
+
 mat_data = sio.loadmat('dataset/houston/houston_30.mat')
 data_IN1 = mat_data['data']
 
@@ -92,17 +122,17 @@ new_gt_IN = gt_IN
 
 new_gt_IN1 = gt_IN1
 
-#  parameter setting
 batch_size = 16
 nb_classes = 15
 nb_epoch = 50
-patience = 200
 
+patience = 200
 INPUT_DIMENSION_CONV = 144
 INPUT_DIMENSION_CONV1 = 30
 
 PATCH_LENGTH = 1
 PATCH_LENGTH1 = 12
+
 
 TOTAL_SIZE = 15029
 VAL_SIZE = 520
@@ -128,11 +158,8 @@ data1_ = data1.reshape(data_IN1.shape[0], data_IN1.shape[1],data_IN1.shape[2])
 whole_data = data_
 whole_data1 = data1_
 
-
 padded_data = zeroPadding.zeroPadding_3D(whole_data, PATCH_LENGTH)
 padded_data1 = zeroPadding.zeroPadding_3D(whole_data1, PATCH_LENGTH1)
-
-
 
 ITER = 1
 CATEGORY = 15
@@ -224,23 +251,23 @@ for num in range(NUM):
         print("x_test shape :", x_test.shape, x_test1.shape)
         print("y_test shape :", y_test.shape)
 
-        # Load model
+
         model = honston_net.model()
-        # kcallbacks
-        earlyStopping6 = kcallbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='auto')
-        saveBestModel6 = kcallbacks.ModelCheckpoint(filepath='ckpt/best.h5', monitor='val_loss', verbose=1,
-                                                    save_best_only=True,
-                                                    mode='auto')
-        print("----------------------------training-begin------------------------------")
-        tic6 = time.clock()
-        history_mss_BN = model.fit(x=[x_train, x_train1], y=y_train,validation_data=([x_val, x_val1],y_val),
-                                 callbacks=[earlyStopping6, saveBestModel6],  batch_size=batch_size, nb_epoch=nb_epoch, shuffle=True)
-        toc6 = time.clock()
-        print("----------------------------test-now------------------------------")
-        tic7 = time.clock()
 
+        # earlyStopping6 = kcallbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='auto')
+        # saveBestModel6 = kcallbacks.ModelCheckpoint(filepath='ckpt/houston.h5', monitor='val_loss', verbose=1,
+        #                                             save_best_only=True,
+        #                                             mode='auto')
+        # print("----------------------------training------------------------------")
+        # tic6 = time.clock()
+        # history_mss_BN = model.fit(x=[x_train, x_train1], y=y_train,validation_data=([x_val, x_val1],y_val),
+        #                          callbacks=[earlyStopping6, saveBestModel6],  batch_size=batch_size, epochs=nb_epoch, shuffle=True)
+        # toc6 = time.clock()
+        # print("----------------------------test now------------------------------")
+        # tic7 = time.clock()
+        # model.save("models/houston.h5")
 
-        model.load_weights('ckpt/best.h5')
+        model.load_weights('ckpt/houston.h5')
         pred_test = model.predict([x_test, x_test1]).argmax(axis=1)
         toc7 = time.clock()
 
@@ -260,10 +287,25 @@ for num in range(NUM):
     AA_RES_SS4.append(average_acc_mss)
 
     print("training finished.")
-    print('Training Time: ', toc6 - tic6)
-    print('Test time:', toc7 - tic7)
+    # print('Training Time: ', toc6 - tic6)
+    # print('Test time:', toc7 - tic7)
     print("# %d Iteration" % (index_iter + 1))
     print('each_acc', each_acc_mss)
     print("oa", overall_acc_mss)
     print("aa", average_acc_mss)
     print("kappa", kappa)
+    gt1[test_indices[:-VAL_SIZE]] = pred_test + 1
+    gt1 = gt1.reshape(349, 1905)
+    save_rgb('houston-DBDA.jpg', gt1, colors=spy_colors)
+    #
+    color = np.array(
+        [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [0.5, 0.5, 1], [0.65, 0.35, 1],
+         [0.75, 0.5, 0.75], [0.75, 1, 0.5], [0.5, 1, 0.65], [0.65, 0.65, 0], [0.75, 1, 0.65], [0, 0, 0.5], [0, 1, 0.75]])
+    # color = color*255
+    newcmap = ListedColormap(color)
+
+    view = pyplot.imshow(gt1.astype(int), cmap=newcmap)
+    bar = pyplot.colorbar()
+    bar.set_ticks(np.linspace(0, 15, 16))
+
+    pyplot.show()

@@ -4,7 +4,7 @@ from matplotlib.colors import ListedColormap
 import scipy.io as sio
 import keras
 import numpy as np
-import matplotlib.pyplot as pyplot
+import matplotlib.pyplot as plt
 from keras.utils.np_utils import to_categorical
 from keras.callbacks import ModelCheckpoint
 from sklearn import metrics, preprocessing
@@ -15,7 +15,7 @@ from Utils import normalization, doPCA, modelStatsRecord, averageAccuracy, zeroP
 from keras.optimizers import Adam, SGD, Adadelta, RMSprop, Nadam
 from keras.callbacks import ReduceLROnPlateau
 import time
-import ksc_net
+import KSC_net
 np.random.seed(1337)
 
 
@@ -80,7 +80,6 @@ def sampling(proptionVal, groundTruth):              #divide dataset into train 
     print(len(test_indices))
 
 
-# load data
 mat_data = sio.loadmat('dataset/KSC/KSC.mat')
 print(mat_data.keys())
 data_IN = mat_data['KSC']
@@ -91,6 +90,7 @@ print(mat_data.keys())
 data_IN1 = mat_data1['data']
 print(data_IN1.shape)
 
+
 mat_gt = sio.loadmat('dataset/KSC/KSC_gt.mat')
 print(mat_gt.keys())
 gt_IN = mat_gt['KSC_gt']
@@ -98,11 +98,9 @@ print(gt_IN.shape)
 new_gt_IN = gt_IN
 
 
-
-## Parameter Settings
 nb_classes = 13
 batch_size = 16
-nb_epoch = 1
+nb_epoch = 200
 patience = 200
 
 img_rows, img_cols = 7, 7
@@ -118,7 +116,6 @@ img_channels1 = 100
 PATCH_LENGTH = 3
 PATCH_LENGTH1 = 13
 
-# Dataset segmentation
 TOTAL_SIZE = 5211
 VAL_SIZE =521
 TRAIN_SIZE = 268  # 5%
@@ -144,10 +141,10 @@ data1_ = data1.reshape(data_IN1.shape[0], data_IN1.shape[1],data_IN1.shape[2])
 whole_data = data_
 whole_data1 = data1_
 
-padded_data = zeroPadding.zeroPadding_3D(whole_data, PATCH_LENGTH)
+padded_data = zeroPadding.zeroPadding_3D(whole_data, PATCH_LENGTH)  # 1
 print("whole_data.shape:", whole_data.shape)
 
-padded_data1 = zeroPadding.zeroPadding_3D(whole_data1, PATCH_LENGTH1)
+padded_data1 = zeroPadding.zeroPadding_3D(whole_data1, PATCH_LENGTH1)  # 13
 print("whole_data.shape:", whole_data1.shape)
 
 
@@ -161,7 +158,7 @@ train_data1 = np.zeros((TRAIN_SIZE, 2*PATCH_LENGTH1 + 1, 2*PATCH_LENGTH1 + 1, IN
 test_data = np.zeros((TEST_SIZE, 2*PATCH_LENGTH + 1, 2*PATCH_LENGTH + 1, INPUT_DIMENSION_CONV))
 test_data1 = np.zeros((TEST_SIZE, 2*PATCH_LENGTH1 + 1, 2*PATCH_LENGTH1 + 1, INPUT_DIMENSION_CONV1))
 
-seeds=[2012]
+seeds=[2013]
 
 # best_weights_RES_path_ss4 = 'models/Indian_best1.hdf5'
 
@@ -226,16 +223,6 @@ for num in range(NUM):
         x_test1 = x_test_all1[:-VAL_SIZE]
         y_test = y_test[:-VAL_SIZE]
 
-        # x_test = x_test_all
-        # x_test1 = x_test_all1
-        # y_test = y_test
-        # print("x_train shape :", x_train.shape)
-        # print("y_train shape :", y_train.shape)
-        # print('x_val shape :', x_val.shape)
-        # print('y_val shape :', y_val.shape)
-        # print("x_test shape :", x_test.shape)
-        # print("y_test shape :", y_test.shape)
-
         print("x_train shape :", x_train.shape, x_train1.shape)
         print("y_train shape :", y_train.shape)
         print('x_val shape :', x_val.shape, x_val1.shape)
@@ -243,31 +230,28 @@ for num in range(NUM):
         print("x_test shape :", x_test.shape, x_test1.shape)
         print("y_test shape :", y_test.shape)
 
-# load model
-model = ksc_net.model()
+model = KSC_net.model()
 
-
-# kcallback
 earlyStopping6 = kcallbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='auto')
-saveBestModel6 = kcallbacks.ModelCheckpoint(filepath='ckpt/KSCbest.h5', monitor='val_loss', verbose=1,save_best_only=True, mode='auto')
-# reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, mode='auto', min_lr=0.00005)
+saveBestModel6 = kcallbacks.ModelCheckpoint(filepath='ckpt/KSC.h5', monitor='val_loss', verbose=1,save_best_only=True, mode='auto')
 
 print("^-^-------------training-------------------^-^")
+
 tic6 = time.clock()
 History = model.fit([x_train, x_train1],  y_train, nb_epoch =nb_epoch, batch_size=batch_size,
           callbacks=[earlyStopping6, saveBestModel6], validation_data=([x_val, x_val1],  y_val))
 toc6 = time.clock()
-# model.save("models/two_channel_IN.h5")
-# model.save("models/spa_network.h5")
+
 model.save("models/KSC.h5")
+
 
 scores = model.evaluate([x_val, x_val1],  y_val, batch_size=batch_size)
 print('Test score:', scores[0])
 print('Test accuracy:', scores[1])
-model.save_weights('model_weigh/KSC200epoch-5%.h5')
+model.save_weights('model_weigh/KSC.h5')
 
 print("^-^-------------testing-------------------^-^")
-model.load_weights('ckpt/KSCbest.h5')
+model.load_weights('ckpt/KSC.h5')
 tic7 = time.clock()
 pred_test = model.predict([x_test, x_test1]).argmax(axis=1)
 toc7 = time.clock()

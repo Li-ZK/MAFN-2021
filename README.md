@@ -1,5 +1,5 @@
 # Hyperspectral Image Classification with Multi-attention Fusion Network
-
+Accepted in GRSL Article DOI: 10.1109/LGRS.2021.3052346.
 This repository implementates 7 frameworks for hyperspectral image classification based on Keras and PyTorch.
 
 Some of our code references the projects

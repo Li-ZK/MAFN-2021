@@ -26,7 +26,7 @@ Usage:
 -------
 Take KSC dataset as an example: 
 1. Download the required dataset and add the corresponding path in the file `./KSC_data.py`
-2. Taking the MAFN framework as an example, run `./KSC/main.py`. 
+2. Taking the MAFN framework as an example, run `./KSC_data.py`. 
 
 Paper:
 ------- 

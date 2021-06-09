@@ -22,6 +22,10 @@ Datasets:
 ------- 
 You can download the hyperspectral datasets in mat format at: http://www.ehu.eus/ccwintco/index.php/Hyperspectral_Remote_Sensing_Scenes, and move the files to `./datasets` folder.
 
+Dataset download:
+Link: https://pan.baidu.com/s/1bSWcqwIDDCl4bSbLBWrFtQ
+Extract code: 906N
+
 Usage:
 -------
 Take KSC dataset as an example: 
